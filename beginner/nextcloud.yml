@@ -1,0 +1,101 @@
+version: "3.7"
+# Above we must declare the docker-compose file version which allows docker to
+#    understand the syntax we are using. Normally does not need to change.
+
+# Services (containers) we would like this document to run
+services:
+  # Nextcloud Application
+  nextcloud:
+    # Use the official nextcloud image (v21.0.0 at time of writing this)
+    image: nextcloud:latest
+    # Set to allow easy docker DNS name resolution
+    container_name: nextcloud
+    # Same as above
+    hostname: nextcloud
+    # Ensure the container is not running as root (added security)
+    user: www-data:www-data
+    # Container will restart unless we specifically stop it
+    restart: unless-stopped
+    # Defines how we want our container to connect outside
+    networks:
+      # We ONLY connect the nextcloud container to our public-facing proxy network
+      - proxy
+      # Use an internal network for the nextcloud services
+      - nextcloud
+    # Open ports in the format host:container - REMOVE AFTER TESTING
+    ports:
+      # INSECURE - REMOVE OUT AFTER TESTING
+      - 80:80
+    # Persistent volumes with bind mounts to easily move/backup data
+    volumes:
+      # I like to use the /opt folder to hold my docker bind mounted volumes
+      - /opt/volumes/nextcloud:/var/www/html
+!    env_file: ./db.env
+    # Environmental (internal to the container) variables to simplify setup
+    environment:
+      # Set to your domain name - Specifying trusted domain for security
+      NEXTCLOUD_TRUSTED_DOMAINS: $NEXTCLOUD_DOMAIN_NAME
+      # Redis host name (container_name)
+      REDIS_HOST: nc-redis
+      # Database host name (container_name)
+      MYSQL_HOST: nc-db
+
+# Nextcloud Database - Using MariaDB, but can also use MySQL or PostgreSQL
+  nc-db:
+    # MariaDB 10.5 (not using latest to prevent update breakage)
+    image: mariadb:10.5
+    # Set to allow easy docker DNS name resolution
+    container_name: nc-db
+    # Same as above
+    hostname: nc-db
+    # Ensure the container is not running as root (added security)
+    user: mysql:mysql
+    # Container will restart unless we specifically stop it
+    restart: unless-stopped
+!    env_file: ./db.env
+    # Recommended database settings as listed in:
+    # https://docs.nextcloud.com/server/21/admin_manual/configuration_database/linux_database_configuration.html
+    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
+    # Defines how we want our container to connect outside
+    networks:
+      # ONLY using an internal network and not exposing to the internet
+      - nextcloud
+    # Persistent volumes with bind mounts to easily move/backup data
+    volumes:
+      # I like to use the /opt folder to hold my docker bind mounted volumes
+      - /opt/volumes/nextcloud-db:/var/lib/mysql
+
+# Nextcloud (in memory) Redis Cache - speed up lookup transactions
+  # Speeds up Nextcloud by reducing the time spent "looking" for things
+  nc-redis:
+    # Official REDIS 6.2 image based upon alpine Linux (to keep it lightweight)
+    image: redis:6.2-alpine
+    # Set to allow easy docker DNS name resolution
+    container_name: nc-redis
+    # Same as above
+    hostname: nc-redis
+    # Ensure container is not running as root (added security)
+    user: redis:redis
+    # Container will restart unless we specifically stop it
+    restart: unless-stopped
+    # Defines how we want our container to connect outside
+    networks:
+    # ONLY using an internal network and not exposing to the internet
+      - nextcloud
+    # Persistent volumes with bind mounts to easily move/backup data
+    volumes:
+    # I like to use the /opt folder to hold my docker bind mounted volumes
+      - /opt/volumes/nc-redis:/data
+
+# We declare networks at the high level to avoid confusion and to access those
+#   not initally started by this document.
+networks:
+  # Traefik proxy network so nextcloud can be seen by Traefik
+  proxy:
+    name: proxy
+
+  # Internal facing network for nextcloud containers
+  nextcloud:
+    name: nextcloud
+    # Define how we want the network created
+    driver: bridge
