@@ -13,7 +13,7 @@ services:
     # Same as above
     hostname: nextcloud
     # Ensure the container is not running as root (added security)
-    user: www-data:www-data
+    #user: www-data:www-data
     # Container will restart unless we specifically stop it
     restart: unless-stopped
     # Defines how we want our container to connect outside
@@ -48,7 +48,7 @@ services:
     # Same as above
     hostname: nc-db
     # Ensure the container is not running as root (added security)
-    user: mysql:mysql
+    #user: mysql:mysql
     # Container will restart unless we specifically stop it
     restart: unless-stopped
     # Recommended database settings as listed in:
@@ -81,7 +81,7 @@ services:
     # Same as above
     hostname: nc-redis
     # Ensure container is not running as root (added security)
-    user: redis:redis
+    #user: redis:redis
     # Container will restart unless we specifically stop it
     restart: unless-stopped
     # Defines how we want our container to connect outside
