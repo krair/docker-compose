@@ -8,7 +8,7 @@ services:
   nextcloud:
     # Use the official nextcloud image (v21.0.0 at time of writing this)
     image: nextcloud:latest
-    # Set to allow easy docker DNS name resolution
+    # Set to allow easy docker DNS name resolution - not strictly necessary
     container_name: nextcloud
     # Same as above
     hostname: nextcloud
@@ -24,7 +24,7 @@ services:
       - nextcloud
     # Open ports in the format host:container - REMOVE AFTER TESTING
     ports:
-      # INSECURE - REMOVE OUT AFTER TESTING
+      # INSECURE - REMOVE AFTER TESTING
       - 80:80
     # Persistent volumes with bind mounts to easily move/backup data
     volumes:
@@ -43,7 +43,7 @@ services:
   nc-db:
     # MariaDB 10.5 (not using latest to prevent update breakage)
     image: mariadb:10.5
-    # Set to allow easy docker DNS name resolution
+    # Set to allow easy docker DNS name resolution - not strictly necessary
     container_name: nc-db
     # Same as above
     hostname: nc-db
@@ -53,7 +53,7 @@ services:
     restart: unless-stopped
     # Recommended database settings as listed in:
     # https://docs.nextcloud.com/server/21/admin_manual/configuration_database/linux_database_configuration.html
-    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
+    command: --transaction-isolation=READ-COMMITTED --log-bin --binlog-format=ROW
     # Defines how we want our container to connect outside
     networks:
       # ONLY using an internal network and not exposing to the internet
@@ -76,7 +76,7 @@ services:
   nc-redis:
     # Official REDIS 6.2 image based upon alpine Linux (to keep it lightweight)
     image: redis:6.2-alpine
-    # Set to allow easy docker DNS name resolution
+    # Set to allow easy docker DNS name resolution - not strictly necessary
     container_name: nc-redis
     # Same as above
     hostname: nc-redis
