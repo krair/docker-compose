@@ -8,12 +8,12 @@ services:
   nextcloud:
     # Use the official nextcloud image (v21.0.0 at time of writing this)
     image: nextcloud:latest
-    # Set to allow easy docker DNS name resolution
+    # Set to allow easy docker DNS name resolution - not strictly necessary
     container_name: nextcloud
     # Same as above
     hostname: nextcloud
     # Ensure the container is not running as root (added security)
-    user: www-data:www-data
+    #user: www-data:www-data
     # Container will restart unless we specifically stop it
     restart: unless-stopped
     # Defines how we want our container to connect outside
@@ -24,13 +24,12 @@ services:
       - nextcloud
     # Open ports in the format host:container - REMOVE AFTER TESTING
     ports:
-      # INSECURE - REMOVE OUT AFTER TESTING
+      # INSECURE - REMOVE AFTER TESTING
       - 80:80
     # Persistent volumes with bind mounts to easily move/backup data
     volumes:
       # I like to use the /opt folder to hold my docker bind mounted volumes
       - /opt/volumes/nextcloud:/var/www/html
-!    env_file: ./db.env
     # Environmental (internal to the container) variables to simplify setup
     environment:
       # Set to your domain name - Specifying trusted domain for security
@@ -44,18 +43,17 @@ services:
   nc-db:
     # MariaDB 10.5 (not using latest to prevent update breakage)
     image: mariadb:10.5
-    # Set to allow easy docker DNS name resolution
+    # Set to allow easy docker DNS name resolution - not strictly necessary
     container_name: nc-db
     # Same as above
     hostname: nc-db
     # Ensure the container is not running as root (added security)
-    user: mysql:mysql
+    #user: mysql:mysql
     # Container will restart unless we specifically stop it
     restart: unless-stopped
-!    env_file: ./db.env
     # Recommended database settings as listed in:
     # https://docs.nextcloud.com/server/21/admin_manual/configuration_database/linux_database_configuration.html
-    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
+    command: --transaction-isolation=READ-COMMITTED --log-bin --binlog-format=ROW
     # Defines how we want our container to connect outside
     networks:
       # ONLY using an internal network and not exposing to the internet
@@ -64,18 +62,26 @@ services:
     volumes:
       # I like to use the /opt folder to hold my docker bind mounted volumes
       - /opt/volumes/nextcloud-db:/var/lib/mysql
+    secrets:
+      - db_root_password
+      - db_password
+    environment:
+      MYSQL_USER: nextcloud
+      MYSQL_DATABASE: nextcloud
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_root_password
+      MYSQL_PASSWORD_FILE: /run/secrets/db_password
 
 # Nextcloud (in memory) Redis Cache - speed up lookup transactions
   # Speeds up Nextcloud by reducing the time spent "looking" for things
   nc-redis:
     # Official REDIS 6.2 image based upon alpine Linux (to keep it lightweight)
     image: redis:6.2-alpine
-    # Set to allow easy docker DNS name resolution
+    # Set to allow easy docker DNS name resolution - not strictly necessary
     container_name: nc-redis
     # Same as above
     hostname: nc-redis
     # Ensure container is not running as root (added security)
-    user: redis:redis
+    #user: redis:redis
     # Container will restart unless we specifically stop it
     restart: unless-stopped
     # Defines how we want our container to connect outside
@@ -99,3 +105,9 @@ networks:
     name: nextcloud
     # Define how we want the network created
     driver: bridge
+
+secrets:
+   db_password:
+     file: $DOCKER_SECRETS_DIR/db_password.txt
+   db_root_password:
+     file: $DOCKER_SECRETS_DIR/db_root_password.txt
