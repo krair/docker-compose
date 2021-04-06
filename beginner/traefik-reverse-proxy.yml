@@ -1,0 +1,95 @@
+version: "3.7"
+# Above we must declare the docker-compose file version which allows docker to
+#    understand the syntax we are using. Normally does not need to change.
+
+# Services (containers) we would like this document to run
+services:
+  # Traefik - Our reverse proxy
+  traefik:
+    # Using the official 2.4.X image
+    image: traefik:2.4
+    # Ensure the above container is started before starting Traefik
+    depends_on:
+      - dockerproxy
+    # Set to allow easy docker DNS name resolution - not strictly necessary
+    container_name: traefik
+    # Same as above
+    hostname: traefik
+    # Container will restart unless we specifically stop it
+    restart: unless-stopped
+    # Commands to run on container start
+    command:
+      # Can set this to DEBUG if more info is needed in log
+      - "--loglevel=INFO"
+    # Defines how we want our container to connect outside
+    networks:
+      # The primary, internet-facing network
+      - proxy
+      # The internal network to allow Traefik to access the docker socket
+      - socket_proxy
+    # Ports to expose outside the container
+    ports:
+      # Default HTTP (insecure) web-server port
+      - 80:80
+      # Default HTTPS (secure) web-server port
+      - 443:443
+    # Persistent volumes with bind mounts to easily move/backup data
+    volumes:
+      # Static configuration file
+      - ./traefik.yml:/etc/traefik/traefik.yml
+      # Dynamic file location
+      - ./rules:/rules
+      # Storage for our SSL certificates
+      - ./le:/le
+    # Environmental (internal to the container) variables to simplify setup
+    environment:
+      # Email for Let's Encrypt to notify you of expiring certificates
+      LETS_ENCRYPT_EMAIL: $LE_EMAIL
+    # A bit of added security so the container cannot gain additional privileges
+    security_opt:
+      - no-new-privileges:true
+
+  # A proxy to protect the docker socket and limit permissions (added security)
+  dockerproxy:
+    # Original socket proxy image - use fluencelabs image for more granular control
+    image: tecnativa/docker-socket-proxy
+    # Set to allow easy docker DNS name resolution - not strictly necessary
+    container_name: dockerproxy
+    # Same as above
+    hostname: dockerproxy
+    # Very important, always want it to be running when docker is running
+    restart: always
+    # Environmental (internal to the container) variables to simplify setup
+    environment:
+      # Gives minimal permissions to those using docker socket
+      CONTAINERS: 1
+    # Defines how we want our container to connect outside
+    networks:
+      # This should only be connected to a single INTERNAL network.
+      - socket_proxy
+    # Ports to expose outside the container
+    ports:
+      # Default port of the socket proxy image
+      - 2375
+    # Connect to the docker socket, Traefik will not use this anymore
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    # A bit of added security so the container cannot gain additional privileges
+    security_opt:
+      - no-new-privileges:true
+
+# We declare networks at the high level to avoid confusion and to access those
+#   not initally started by this document.
+networks:
+  # Reverse proxy network we can connect to through Traefik
+  proxy:
+    # Name - otherwise defaults to <project>_<name>
+    name: proxy
+    # How we want docker to create this network (default is bridge)
+    driver: bridge
+  # Docker socket proxy network
+  socket_proxy:
+    # Name - otherwise defaults to <project>_<name>
+    name: socket_proxy
+    # VERY IMPORTANT - ensures it cannot be used outside of the local network
+    internal: true

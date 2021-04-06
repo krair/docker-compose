@@ -1,0 +1,80 @@
+## Dynamic configuration for Nextcloud
+
+# Define routers so Traefik knows where and how to send traffic
+http:
+  routers:
+    # Redirect HTTP (insecure) requests to HTTPS (secure)
+    nextcloud-redirect:
+      # Your Nextcloud domain name
+      rule: Host(`$NEXTCLOUD_DOMAIN_NAME`)
+      # Where the requets will "enter" Traefik
+      entryPoints:
+        - web
+      # Any modifications we want to make before passing to our container (defined below)
+      middlewares:
+        - https-redirect
+      # Which service (container) to pass the request to (defined below)
+      service: nextcloud
+
+    # Primary router using HTTPS (secure) port
+    nextcloud-router:
+      # Your Nextcloud domain name
+      rule: Host(`$NEXTCLOUD_DOMAIN_NAME`)
+      # Where the requets will "enter" Traefik
+      entryPoints:
+        - web-secure
+      # Any modifications we want to make before passing to our container (defined below)
+      middlewares:
+        - nc-headers
+        - nextcloud-redirect
+      # Which service (container) to pass the request to (defined below)
+      service: nextcloud
+      # Which TLS (Transport Security Layer) options to apply to the connection
+      tls:
+        # Defined in our static config file (loaded when Traefik starts)
+        certResolver: letsencrypt
+        # Default options defined in our static config file (loaded when Traefik starts)
+        options: default
+
+  # Modifications to make to our connection on the way to the container
+  middlewares:
+
+    # Redirect HTTP (insecure) connections to HTTPS (secure)
+    https-redirect:
+      redirectScheme:
+        scheme: https
+
+    # Nextcloud spefific security headers (may or may not work with other services)
+    nc-headers:
+      # Information added/checked/modified at beginning of packets sent to server
+      headers:
+        customFrameOptionsValue: SAMEORIGIN
+        sslRedirect: true
+        #contentSecurityPolicy: default-src 'self'
+        referrerPolicy: no-referrer
+        forceSTSHeader: true
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        contentTypeNosniff: true
+        browserXssFilter: true
+        customRequestHeaders:
+          X-Forwarded-Proto: https
+        customResponseHeaders:
+          server: "YoMaMa"
+
+    # Redirect required if using Nextcloud calendar and/or contacts syncing
+    nextcloud-redirect:
+      redirectRegex:
+        permanent: true
+        regex: "https://(.*)/.well-known/(card|cal)dav"
+        replacement: "https://${1}/remote.php/dav/"
+
+  # Services (containers or non-docker services) we will point requests to
+  services:
+    nextcloud:
+      loadBalancer:
+        servers:
+        # NOTE: Using http (insecure) port since Traefik will handle the security
+        # and pass along the request internally
+        - url: http://nextcloud:80

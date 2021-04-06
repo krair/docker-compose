@@ -1,0 +1,59 @@
+## Static configuration - Traefik loads this file when first started
+log:
+  # Can set this to DEBUG if more info is needed in log
+  level: INFO
+
+# Tell Traefik where to look for services
+providers:
+  docker:
+    # Services only available if explicitly allowed
+    exposedByDefault: "false"
+    # Changed from the host-machine socket to the socket_proxy (added security)
+    endpoint: tcp://dockerproxy:2375
+    network: "socket_proxy"
+  # Can add services through file declaration as well (docker and non-docker)
+  file:
+    # Directory to find new config files (for dynamic configuration)
+    directory: /rules
+    # Watch for changes
+    watch: true
+
+# Ports which Traefik will listen on for web traffic
+entryPoints:
+  # Default (insecure) HTTP port
+  web:
+    address: ":80"
+  # Default (secure) HTTPS port
+  web-secure:
+    address: ":443"
+
+# Where we will get our SSL certificates from
+certificatesResolvers:
+  # Name our resolver (this can be named anything)
+  letsencrypt:
+    # Tells Traefik we will be using Let's Encrypt
+    acme:
+      # Staging server to avoid hitting limit while testing
+      caServer: https://acme-staging-v02.api.letsencrypt.org/directory
+      # Use below server when you have tested everything working
+      #caServer: https://acme-v02.api.letsencrypt.org/directory
+      # Email where Let's Encrypt will notify you if there's a problem with your certificate(s)
+      email: $LETS_ENCRYPT_EMAIL
+      # Where to store the certificate files
+      storage: /le/acme.json
+      # One of 3 options: http (uses port 80), tls (uses port 443), dns(dns provider)
+      tlsChallenge: {}
+
+# Set our TLS (Transport Security Layer) default options for added security
+# NOTE: This can also be set in the dynamic files
+tls:
+  options:
+    default:
+      sniStrict: true
+      # NOTE: The following could break websites for older devices/browsers
+      minVersion: VersionTLS12
+      cipherSuites:
+        - TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+        - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
