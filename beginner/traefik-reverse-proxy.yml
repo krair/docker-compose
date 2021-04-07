@@ -17,10 +17,6 @@ services:
     hostname: traefik
     # Container will restart unless we specifically stop it
     restart: unless-stopped
-    # Commands to run on container start
-    command:
-      # Can set this to DEBUG if more info is needed in log
-      - "--loglevel=INFO"
     # Defines how we want our container to connect outside
     networks:
       # The primary, internet-facing network
@@ -36,15 +32,15 @@ services:
     # Persistent volumes with bind mounts to easily move/backup data
     volumes:
       # Static configuration file
-      - ./traefik.yml:/etc/traefik/traefik.yml
+      - $DOCKER_DIR/traefik/traefik.yml:/etc/traefik/traefik.yml
       # Dynamic file location
-      - ./rules:/rules
-      # Storage for our SSL certificates
-      - ./le:/le
+      - $DOCKER_DIR/traefik/dynamic:/dynamic
+      # Storage for our SSL (TLS) certificates
+      - $DOCKER_DIR/traefik/letsencrypt:/letsencrypt
     # Environmental (internal to the container) variables to simplify setup
     environment:
       # Email for Let's Encrypt to notify you of expiring certificates
-      LETS_ENCRYPT_EMAIL: $LE_EMAIL
+      TRAEFIK_CERTIFICATESRESOLVERS_LETSENCRYPT_ACME_EMAIL: $LETSENCRYPT_EMAIL
     # A bit of added security so the container cannot gain additional privileges
     security_opt:
       - no-new-privileges:true

@@ -5,9 +5,9 @@ http:
   routers:
     # Redirect HTTP (insecure) requests to HTTPS (secure)
     nextcloud-redirect:
-      # Your Nextcloud domain name
-      rule: Host(`$NEXTCLOUD_DOMAIN_NAME`)
-      # Where the requets will "enter" Traefik
+      # Your Nextcloud domain name - TODO: How to pass env vars into running Traefik container
+      rule: Host(`{{ env "NEXTCLOUD_DOMAIN_NAME" }}`)
+      # Where the requests will "enter" Traefik
       entryPoints:
         - web
       # Any modifications we want to make before passing to our container (defined below)
@@ -18,8 +18,8 @@ http:
 
     # Primary router using HTTPS (secure) port
     nextcloud-router:
-      # Your Nextcloud domain name
-      rule: Host(`$NEXTCLOUD_DOMAIN_NAME`)
+      # Your Nextcloud domain name - TODO: How to pass env vars into running Traefik container
+      rule: Host(`{{ env "NEXTCLOUD_DOMAIN_NAME" }}`)
       # Where the requets will "enter" Traefik
       entryPoints:
         - web-secure
@@ -45,6 +45,8 @@ http:
         scheme: https
 
     # Nextcloud spefific security headers (may or may not work with other services)
+    # TODO: Revieiw each header for Nextcloud (especially to pass client IP)
+    # TODO: Break out normal headers into separate file, add others like rate-limit
     nc-headers:
       # Information added/checked/modified at beginning of packets sent to server
       headers:

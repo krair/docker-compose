@@ -14,7 +14,7 @@ providers:
   # Can add services through file declaration as well (docker and non-docker)
   file:
     # Directory to find new config files (for dynamic configuration)
-    directory: /rules
+    directory: /dynamic
     # Watch for changes
     watch: true
 
@@ -38,9 +38,10 @@ certificatesResolvers:
       # Use below server when you have tested everything working
       #caServer: https://acme-v02.api.letsencrypt.org/directory
       # Email where Let's Encrypt will notify you if there's a problem with your certificate(s)
-      email: $LETS_ENCRYPT_EMAIL
+      # TODO: This must be set manually, cannot be set with env var
+      email: youremail@email.com
       # Where to store the certificate files
-      storage: /le/acme.json
+      storage: /letsencrypt/acme.json
       # One of 3 options: http (uses port 80), tls (uses port 443), dns(dns provider)
       tlsChallenge: {}
 
