@@ -12,8 +12,6 @@ services:
     container_name: nextcloud
     # Same as above
     hostname: nextcloud
-    # Ensure the container is not running as root (added security)
-    #user: www-data:www-data
     # Container will restart unless we specifically stop it
     restart: unless-stopped
     # Defines how we want our container to connect outside
@@ -34,10 +32,10 @@ services:
     environment:
       # Set to your domain name - Specifying trusted domain for security
       NEXTCLOUD_TRUSTED_DOMAINS: $NEXTCLOUD_DOMAIN_NAME
+      # Set to the name of your proxy container
+      TRUSTED_PROXIES: traefik
       # Redis host name (container_name)
       REDIS_HOST: nc-redis
-      # Database host name (container_name)
-      MYSQL_HOST: nc-db
 
 # Nextcloud Database - Using MariaDB, but can also use MySQL or PostgreSQL
   nc-db:
@@ -47,13 +45,11 @@ services:
     container_name: nc-db
     # Same as above
     hostname: nc-db
-    # Ensure the container is not running as root (added security)
-    #user: mysql:mysql
     # Container will restart unless we specifically stop it
     restart: unless-stopped
     # Recommended database settings as listed in:
     # https://docs.nextcloud.com/server/21/admin_manual/configuration_database/linux_database_configuration.html
-    command: --transaction-isolation=READ-COMMITTED --log-bin --binlog-format=ROW
+    command: --transaction-isolation=READ-COMMITTED --log-bin=mysqld-bin --binlog-format=ROW
     # Defines how we want our container to connect outside
     networks:
       # ONLY using an internal network and not exposing to the internet
@@ -80,8 +76,6 @@ services:
     container_name: nc-redis
     # Same as above
     hostname: nc-redis
-    # Ensure container is not running as root (added security)
-    #user: redis:redis
     # Container will restart unless we specifically stop it
     restart: unless-stopped
     # Defines how we want our container to connect outside
@@ -91,16 +85,16 @@ services:
     # Persistent volumes with bind mounts to easily move/backup data
     volumes:
     # I like to use the /opt folder to hold my docker bind mounted volumes
-      - /opt/volumes/nc-redis:/data
+      - /opt/volumes/nextcloud-redis:/data
 
 # We declare networks at the high level to avoid confusion and to access those
 #   not initally started by this document.
 networks:
-  # Traefik proxy network so nextcloud can be seen by Traefik
+  # Traefik proxy network so Nextcloud can be seen by Traefik
   proxy:
     name: proxy
 
-  # Internal facing network for nextcloud containers
+  # Internal facing network for Nextcloud containers
   nextcloud:
     name: nextcloud
     # Define how we want the network created
@@ -108,6 +102,6 @@ networks:
 
 secrets:
    db_password:
-     file: $DOCKER_SECRETS_DIR/db_password.txt
+     file: $DOCKER_SECRETS_DIR/db_password
    db_root_password:
-     file: $DOCKER_SECRETS_DIR/db_root_password.txt
+     file: $DOCKER_SECRETS_DIR/db_root_password
