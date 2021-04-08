@@ -44,17 +44,3 @@ certificatesResolvers:
       storage: /letsencrypt/acme.json
       # One of 3 options: http (uses port 80), tls (uses port 443), dns(dns provider)
       tlsChallenge: {}
-
-# Set our TLS (Transport Security Layer) default options for added security
-# NOTE: This can also be set in the dynamic files
-tls:
-  options:
-    default:
-      sniStrict: true
-      # NOTE: The following could break websites for older devices/browsers
-      minVersion: VersionTLS12
-      cipherSuites:
-        - TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
-        - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
-        - TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
-        - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256

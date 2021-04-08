@@ -1,5 +1,18 @@
 ## Dynamic configuration for Nextcloud
 
+# Set our TLS (Transport Security Layer) default options for added security
+tls:
+  options:
+    default:
+      sniStrict: true
+      # NOTE: The following could break websites for older devices/browsers
+      minVersion: VersionTLS12
+      cipherSuites:
+        - TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+        - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+
 # Define routers so Traefik knows where and how to send traffic
 http:
   routers:
