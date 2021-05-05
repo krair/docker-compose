@@ -7,7 +7,7 @@ services:
   # Nextcloud Application
   nextcloud:
     # Use the official nextcloud image (v21.0.0 at time of writing this)
-    image: nextcloud:latest
+    image: nextcloud:21
     # Set to allow easy docker DNS name resolution - not strictly necessary
     container_name: nextcloud
     # Same as above
@@ -32,8 +32,8 @@ services:
     environment:
       # Set to your domain name - Specifying trusted domain for security
       NEXTCLOUD_TRUSTED_DOMAINS: $NEXTCLOUD_DOMAIN_NAME
-      # Set to the name of your proxy container
-      TRUSTED_PROXIES: traefik
+      # Set to the IP or IP range of your proxy container
+      TRUSTED_PROXIES: 172.16.0.0/12
       # Redis host name (container_name)
       REDIS_HOST: nc-redis
 
